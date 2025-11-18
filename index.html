@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ניהול סיכונים - תוכן לימודי לא-ליניארי</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        /* כפתורי בקרה */
+        .control-panel {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+            flex-direction: column;
+        }
+
+        .control-btn {
+            background: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: inherit;
+        }
+
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+        }
+
+        .btn-edit {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-save {
+            background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
+            color: white;
+            display: none;
+        }
+
+        .btn-cancel {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+            color: white;
+            display: none;
+        }
+
+        .btn-print {
+            background: linear-gradient(135deg, #2193b0 0%, #6dd5ed 100%);
+            color: white;
+        }
+
+        .btn-export {
+            background: linear-gradient(135deg, #ee0979 0%, #ff6a00 100%);
+            color: white;
+        }
+
+        .edit-mode-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #ffc107;
+            color: #333;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(255, 193, 7, 0.4);
+            display: none;
+            z-index: 1000;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 2em;
+            color: #667eea;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .context-box {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(240, 147, 251, 0.3);
+        }
+
+        .context-box h3 {
+            font-size: 1.3em;
+            margin-bottom: 15px;
+        }
+
+        .context-box p {
+            line-height: 1.8;
+            margin-bottom: 10px;
+        }
+
+        .context-box ul {
+            list-style: none;
+            padding-right: 20px;
+            margin-top: 10px;
+        }
+
+        .context-box li {
+            padding: 5px 0;
+            padding-right: 20px;
+            position: relative;
+        }
+
+        .context-box li:before {
+            content: "✓";
+            position: absolute;
+            right: 0;
+            font-weight: bold;
+        }
+
+        .risk-card {
+            background: #f8f9fa;
+            border-right: 5px solid #dc3545;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.07);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .risk-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.15);
+        }
+
+        .risk-card.high {
+            border-right-color: #dc3545;
+        }
+
+        .risk-card.medium {
+            border-right-color: #ffc107;
+        }
+
+        .risk-card.low {
+            border-right-color: #28a745;
+        }
+
+        .risk-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .risk-title {
+            font-size: 1.4em;
+            color: #2c3e50;
+            font-weight: bold;
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .risk-severity {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .severity-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9em;
+            color: white;
+        }
+
+        .severity-high {
+            background: #dc3545;
+        }
+
+        .severity-medium {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .severity-low {
+            background: #28a745;
+        }
+
+        .risk-metrics {
+            display: flex;
+            gap: 15px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .metric {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .risk-description {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-right: 3px solid #667eea;
+        }
+
+        .risk-subsection {
+            margin-bottom: 15px;
+        }
+
+        .risk-subsection h4 {
+            color: #495057;
+            font-size: 1.1em;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .risk-subsection ul {
+            list-style: none;
+            padding-right: 20px;
+        }
+
+        .risk-subsection li {
+            padding: 8px 0;
+            padding-right: 25px;
+            position: relative;
+            line-height: 1.6;
+        }
+
+        .risk-subsection li:before {
+            content: "▪";
+            position: absolute;
+            right: 0;
+            color: #667eea;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+
+        .impacts li:before {
+            color: #dc3545;
+        }
+
+        .opportunities li:before {
+            color: #28a745;
+        }
+
+        .summary-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-top: 30px;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .summary-box h3 {
+            font-size: 1.5em;
+            margin-bottom: 15px;
+        }
+
+        .summary-stats {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            background: rgba(255,255,255,0.2);
+            padding: 15px 25px;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            display: block;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .editable {
+            cursor: default;
+            transition: all 0.3s ease;
+        }
+
+        .editable[contenteditable="true"] {
+            cursor: text;
+            outline: none;
+        }
+
+        .editable[contenteditable="true"]:hover {
+            background-color: rgba(102, 126, 234, 0.1);
+            border-radius: 3px;
+        }
+
+        .editable[contenteditable="true"]:focus {
+            background-color: rgba(102, 126, 234, 0.15);
+            border-radius: 3px;
+            outline: 2px solid #667eea;
+        }
+
+        .footer {
+            background: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            font-size: 0.9em;
+        }
+
+        /* הודעות */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 15px 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            display: none;
+            z-index: 1001;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .toast.success {
+            border-right: 4px solid #28a745;
+        }
+
+        .toast.error {
+            border-right: 4px solid #dc3545;
+        }
+
+        .toast.info {
+            border-right: 4px solid #2193b0;
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+            .container {
+                box-shadow: none;
+            }
+            .risk-card {
+                page-break-inside: avoid;
+            }
+            .control-panel,
+            .edit-mode-indicator {
+                display: none !important;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+            .content {
+                padding: 20px;
+            }
+            .risk-header {
+                flex-direction: column;
+            }
+            .summary-stats {
+                flex-direction: column;
+            }
+            .control-panel {
+                left: 10px;
+                top: 10px;
+            }
+            .edit-mode-indicator {
+                right: 10px;
+                top: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- כפתורי בקרה -->
+    <div class="control-panel">
+        <button class="control-btn btn-edit" onclick="toggleEditMode()">
+            ✏️ <span id="editBtnText">מצב עריכה</span>
+        </button>
+        <button class="control-btn btn-save" onclick="saveChanges()">
+            💾 שמור שינויים
+        </button>
+        <button class="control-btn btn-cancel" onclick="cancelChanges()">
+            ❌ בטל שינויים
+        </button>
+        <button class="control-btn btn-print" onclick="printReport()">
+            🖨️ הדפס
+        </button>
+        <button class="control-btn btn-export" onclick="exportToHTML()">
+            📥 ייצא HTML
+        </button>
+    </div>
+
+    <!-- אינדיקטור מצב עריכה -->
+    <div class="edit-mode-indicator" id="editIndicator">
+        ✏️ מצב עריכה פעיל
+    </div>
+
+    <!-- הודעות -->
+    <div class="toast" id="toast"></div>
+
+    <div class="container">
+        <div class="header">
+            <h1 class="editable">⚠️ ניהול סיכונים</h1>
+            <p class="editable">תוכן לימודי לא-ליניארי - מתודיקה (שלב ראשוני)</p>
+        </div>
+
+        <div class="content">
+            <section class="section">
+                <h2 class="section-title editable">⚠️ ניהול סיכונים</h2>
+
+                <!-- הקשר -->
+                <div class="context-box">
+                    <h3 class="editable">📌 הקשר הפרויקט - שלב ראשוני</h3>
+                    <p class="editable">
+                        <strong>תוכן מיוצר על ידי אנשי מתודיקה</strong> (לא תוכן מג'ונרט בשלב זה). 
+                        האתגר המרכזי: התוכן בנוי במבנה <strong>לא-ליניארי ומסועף</strong>.
+                    </p>
+                    <p class="editable"><strong>דוגמה: נושא "זוויות קהות"</strong></p>
+                    <ul>
+                        <li class="editable">התלמיד בוחר <strong>עולם תוכן</strong>: כדורגל / אומנות / אדריכלות / מוזיקה / ריקוד / גרפיקה</li>
+                        <li class="editable">לאחר הבחירה, ההקניה מתבצעת ב<strong>מספר דרכים מגוונות</strong> שהתלמיד בוחר ביניהן</li>
+                        <li class="editable">כל מסלול כולל: טקסטים, סרטונים, אינטראקציות, משימות</li>
+                    </ul>
+                    <p class="editable" style="margin-top: 15px;">
+                        <strong>התוצאה:</strong> הבדיקה הליניארית המסורתית של המפמ"ר הופכת <strong>בלתי אפשרית</strong> - 
+                        כמות פריטים עצומה × איפיונים שונים × מסלולים מסועפים = חוסר יכולת לדגום ולבדוק הכל.
+                    </p>
+                    <p class="editable">
+                        <strong>בשלב הבא:</strong> יתווסף גם תוכן מג'ונרט (AI), אך גם ללא זה המפמ"ר כבר מתקשה ורואה סיכון.
+                    </p>
+                </div>
+
+                <!-- סיכון 1 -->
+                <div class="risk-card high">
+                    <div class="risk-header">
+                        <div class="risk-title editable">1️⃣ סיכון מבני-פדגוגי: קריסת המודל הליניארי של בדיקת תוכן</div>
+                        <div class="risk-severity">
+                            <span class="severity-badge severity-high editable">גבוהה מאוד 🔴</span>
+                            <div class="risk-metrics">
+                                <span class="metric editable">הסתברות: 10/10</span>
+                                <span class="metric editable">נזק: 9/10</span>
+                                <span class="metric editable">חומרה: 90</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="risk-description">
+                        <p class="editable"><strong>תיאור הסיכון:</strong><br>
+                        המבנה הלא-ליניארי והמסועף של התוכן (בחירת עולם תוכן → בחירת דרך הקניה → מסלולים מרובים) <strong>הורס לחלוטין את המודל הליניארי של בדיקת תוכן</strong>. המפמ"ר לא יכול "לעבור על כל הפריטים" כי אין "רצף אחד" אלא <strong>עשרות ומאות מסלולים אפשריים</strong>. הדגימה המסורתית לא רלוונטית כי כל תלמיד עשוי לחוות תוכן שונה לחלוטין.</p>
+                    </div>
+
+                    <div class="risk-subsection impacts">
+                        <h4 class="editable">📉 השלכות אפשריות:</h4>
+                        <ul>
+                            <li class="editable">תוכן בעייתי עשוי להישאר "מוסתר" במסלולים שלא נבדקו</li>
+                            <li class="editable">חוסר יכולת להבטיח עקביות פדגוגית בין מסלולים שונים</li>
+                            <li class="editable">המפמ"ר נכנס למצב של "אי ודאות מוחלטת" - לא יודע מה התלמידים באמת לומדים</li>
+                            <li class="editable">פגיעה באחריות המקצועית - אישור תוכן מבלי לבדוק את כולו</li>
+                            <li class="editable">במקרה של תוכן בעייתי - חשיפה ציבורית ומשפטית חמורה</li>
+                        </ul>
+                    </div>
+
+                    <div class="risk-subsection opportunities">
+                        <h4 class="editable">💡 הזדמנויות:</h4>
+                        <ul>
+                            <li class="editable">מעבר לבדיקת "עקרונות ואילוצים" במקום בדיקת כל פריט</li>
+                            <li class="editable">פיתוח מטריצת דגימה חכמה - בדיקת מסלולים מייצגים מכל עולם תוכן</li>
+                            <li class="editable">יצירת "צ'קליסט איכות" שמתודיקה חייבת לעבור עליו לפני הגשה</li>
+                            <li class="editable">הגדרת מנגנון פידבק שוטף ממורים לזיהוי בעיות במסלולים שונים</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- סיכון 2 -->
+                <div class="risk-card high">
+                    <div class="risk-header">
+                        <div class="risk-title editable">2️⃣ סיכון תוכן: חוסר שליטה על איכות ותקינות מדיה (סרטונים, שפה לא תקנית)</div>
+                        <div class="risk-severity">
+                            <span class="severity-badge severity-high editable">גבוהה 🔴</span>
+                            <div class="risk-metrics">
+                                <span class="metric editable">הסתברות: 8/10</span>
+                                <span class="metric editable">נזק: 8/10</span>
+                                <span class="metric editable">חומרה: 64</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="risk-description">
+                        <p class="editable"><strong>תיאור הסיכון:</strong><br>
+                        עקב ריבוי הפריטים והאיפיונים השונים (טקסטים, סרטונים, אנימציות, אינטראקציות), קיים סיכון ש<strong>תוכן לא מתאים יחלחל למערכת</strong>. דוגמה קריטית: <strong>סרטונים שמשתמשים בשפה לא תקנית</strong>, סלנג, או ביטויים בעייתיים. בגלל היקף התוכן, המפמ"ר לא יכול לצפות בכל סרטון ולבדוק כל טקסט.</p>
+                    </div>
+
+                    <div class="risk-subsection impacts">
+                        <h4 class="editable">📉 השלכות אפשריות:</h4>
+                        <ul>
+                            <li class="editable">חשיפת תלמידים לשפה לא נאותה או תכנים בעייתיים</li>
+                            <li class="editable">פגיעה בתדמית משרד החינוך בעקבות פרסום תוכן בעייתי</li>
+                            <li class="editable">תלונות הורים ומורים על רמת התוכן</li>
+                            <li class="editable">צורך בהסרה דחופה של תכנים - הפרעה לרצף הלימודי</li>
+                            <li class="editable">עלויות גבוהות של בדיקה רטרואקטיבית ותיקון</li>
+                        </ul>
+                    </div>
+
+                    <div class="risk-subsection opportunities">
+                        <h4 class="editable">💡 הזדמנויות:</h4>
+                        <ul>
+                            <li class="editable">הגדרת "מדיניות תוכן" ברורה ומחייבת למתודיקה (tone of voice, שפה מותרת)</li>
+                            <li class="editable">דרישה מהספק לבדיקות QA פנימיות לפני הגשה</li>
+                            <li class="editable">יצירת מנגנון "דגלול" (flagging) למורים לדיווח על תוכן בעייתי</li>
+                            <li class="editable">בדיקה מדגמית ממוקדת בתכנים רגישים (סרטונים, דיאלוגים)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- סיכון 3 -->
+                <div class="risk-card high">
+                    <div class="risk-header">
+                        <div class="risk-title editable">3️⃣ סיכון איכות פדגוגית: אי-עקביות בין עולמות תוכן ומסלולי הקניה</div>
+                        <div class="risk-severity">
+                            <span class="severity-badge severity-high editable">גבוהה 🔴</span>
+                            <div class="risk-metrics">
+                                <span class="metric editable">הסתברות: 9/10</span>
+                                <span class="metric editable">נזק: 7/10</span>
+                                <span class="metric editable">חומרה: 63</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="risk-description">
+                        <p class="editable"><strong>תיאור הסיכון:</strong><br>
+                        כאשר אותו נושא (למשל "זוויות קהות") מוקנה ב-6 עולמות תוכן שונים (כדורגל, אומנות, אדריכלות וכו') ובמספר דרכי הקניה, <strong>קיים סיכון לפערים גדולים באיכות הפדגוגית</strong>. יתכן שבעולם אחד ההסבר מצוין, ובעולם אחר שטחי או שגוי. המפמ"ר לא יכול לוודא עקביות בין כל המסלולים.</p>
+                    </div>
+
+                    <div class="risk-subsection impacts">
+                        <h4 class="editable">📉 השלכות אפשריות:</h4>
+                        <ul>
+                            <li class="editable">תלמידים שבחרו מסלול אחד מקבלים חינוך איכותי, ואחרים - לא</li>
+                            <li class="editable">אי-שוויון בהזדמנויות למידה בהתאם לבחירות אקראיות</li>
+                            <li class="editable">תסכול מורים שמגלים שתלמידים שונים למדו "גרסאות שונות" של אותו נושא</li>
+                            <li class="editable">קושי בהערכה אחידה - מבחנים לא תואמים את כל המסלולים</li>
+                            <li class="editable">ביקורת מקצועית על רמת הפיתוח הפדגוגי</li>
+                        </ul>
+                    </div>
+
+                    <div class="risk-subsection opportunities">
+                        <h4 class="editable">💡 הזדמנויות:</h4>
+                        <ul>
+                            <li class="editable">הגדרת "ליבת ידע מינימלית" שחייבת להיות זהה בכל המסלולים</li>
+                            <li class="editable">בדיקה מדגמית השוואתית בין עולמות תוכן שונים</li>
+                            <li class="editable">יצירת רוברי pedagogic לדירוג איכות בכל מסלול</li>
+                            <li class="editable">הכשרת צוות מתודיקה על עקרונות עקביות תוכנית</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- סיכון 4 -->
+                <div class="risk-card medium">
+                    <div class="risk-header">
+                        <div class="risk-title editable">4️⃣ סיכון ארגוני-תפקידי: אובדן שליטה ומשמעות מקצועית של המפמ"ר</div>
+                        <div class="risk-severity">
+                            <span class="severity-badge severity-medium editable">בינונית 🟠</span>
+                            <div class="risk-metrics">
+                                <span class="metric editable">הסתברות: 8/10</span>
+                                <span class="metric editable">נזק: 6/10</span>
+                                <span class="metric editable">חומרה: 48</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="risk-description">
+                        <p class="editable"><strong>תיאור הסיכון:</strong><br>
+                        המפמ"ר מרגיש שהוא <strong>מאבד שליטה ומשמעות מקצועית</strong>. כשהתפקיד היה "לעבור על כל הפריטים ולאשר", היה לו תחום אחריות ברור. כעת, הוא נדרש "לגמישות" מבלי שהוגדר מהי גמישות לגיטימית, והוא חש <strong>אי-ודאות עמוקה</strong> לגבי תפקידו. זה יוצר התנגדות ופחד מפני השינוי.</p>
+                    </div>
+
+                    <div class="risk-subsection impacts">
+                        <h4 class="editable">📉 השלכות אפשריות:</h4>
+                        <ul>
+                            <li class="editable">התנגדות פעילה או סבילה של מפמ"רים לתהליך</li>
+                            <li class="editable">דרישות מוגזמות לבדיקה שמעכבות את הפרויקט</li>
+                            <li class="editable">ירידה במוטיבציה והזדהות עם החדשנות</li>
+                            <li class="editable">תחושת איום על הסמכות המקצועית והמעמד</li>
+                            <li class="editable">יציאה מהתפקיד של מפמ"רים מנוסים</li>
+                        </ul>
+                    </div>
+
+                    <div class="risk-subsection opportunities">
+                        <h4 class="editable">💡 הזדמנויות:</h4>
+                        <ul>
+                            <li class="editable">הגדרה מחדש וחגיגית של תפקיד המפמ"ר כ"אדריכל תוכן" ו"מגדיר עקרונות"</li>
+                            <li class="editable">הכשרה והסמכה בפיקוח על תכנים לא-ליניאריים</li>
+                            <li class="editable">מעורבות המפמ"רים בהגדרת הקריטריונים ומדיניות התוכן</li>
+                            <li class="editable">יצירת "ועדת חדשנות" בראשות מפמ"רים לניהול התהליך</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- סיכון 5 -->
+                <div class="risk-card medium">
+                    <div class="risk-header">
+                        <div class="risk-title editable">5️⃣ סיכון רגולטורי: אישור תוכן מבלי לראות את כולו - חשיפה משפטית</div>
+                        <div class="risk-severity">
+                            <span class="severity-badge severity-medium editable">בינונית 🟠</span>
+                            <div class="risk-metrics">
+                                <span class="metric editable">הסתברות: 7/10</span>
+                                <span class="metric editable">נזק: 6/10</span>
+                                <span class="metric editable">חומרה: 42</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="risk-description">
+                        <p class="editable"><strong>תיאור הסיכון:</strong><br>
+                        אין נוהל רשמי שמאפשר למפמ"ר לאשר תוכן מבלי לראות ולבדוק את כולו. אישור כזה עלול לחשוף את המפמ"ר ואת משרד החינוך <strong>לחשיפה משפטית</strong> במקרה של תוכן בעייתי. מצד שני, הדרישה לראות הכל מקפיאה את הפרויקט. זהו <strong>מבוי סתום רגולטורי</strong>.</p>
+                    </div>
+
+                    <div class="risk-subsection impacts">
+                        <h4 class="editable">📉 השלכות אפשריות:</h4>
+                        <ul>
+                            <li class="editable">עיכובים ארוכים בהשקת הפרויקט עקב חוסר נוהל</li>
+                            <li class="editable">אחריות אישית של המפמ"ר על תוכן שלא בדק</li>
+                            <li class="editable">במקרה של תוכן בעייתי - תביעות משפטיות כנגד המשרד</li>
+                            <li class="editable">פגיעה באמון הציבור במערכת החינוך</li>
+                            <li class="editable">דרישה לביקורת חיצונית ויקרה</li>
+                        </ul>
+                    </div>
+
+                    <div class="risk-subsection opportunities">
+                        <h4 class="editable">💡 הזדמנויות:</h4>
+                        <ul>
+                            <li class="editable">פיתוח נוהל רשמי חדש לאישור "תוכן מסועף" על בסיס דגימה מדעית</li>
+                            <li class="editable">הגשת בקשה ל"ארגז חול" רגולטורי לניסוי הנוהל</li>
+                            <li class="editable">העברת אחריות חלקית לספק (SLA מחייב, ביטוחים)</li>
+                            <li class="editable">יצירת מנגנון ביקורת אקראית שוטפת אחרי האישור</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- סיכום -->
+                <div class="summary-box">
+                    <h3 class="editable">📊 סיכום רמות חומרה</h3>
+                    <div class="summary-stats">
+                        <div class="stat-item">
+                            <span class="stat-number editable">3</span>
+                            <span class="stat-label editable">🔴 סיכונים ברמה גבוהה (49-90)</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number editable">2</span>
+                            <span class="stat-label editable">🟠 סיכונים ברמה בינונית (25-48)</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-number editable">0</span>
+                            <span class="stat-label editable">🟢 סיכונים ברמה נמוכה (1-24)</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <div class="footer">
+            <p class="editable">פיתוח ועיצוב המוצר: ד"ר אסף אוזן</p>
+        </div>
+    </div>
+
+    <script>
+        let isEditMode = false;
+        let originalContent = '';
+
+        function toggleEditMode() {
+            isEditMode = !isEditMode;
+            const editableElements = document.querySelectorAll('.editable');
+            const editBtn = document.querySelector('.btn-edit');
+            const saveBtn = document.querySelector('.btn-save');
+            const cancelBtn = document.querySelector('.btn-cancel');
+            const indicator = document.getElementById('editIndicator');
+            const editBtnText = document.getElementById('editBtnText');
+
+            if (isEditMode) {
+                originalContent = document.querySelector('.container').innerHTML;
+                editableElements.forEach(element => {
+                    element.setAttribute('contenteditable', 'true');
+                });
+                editBtn.style.background = 'linear-gradient(135deg, #eb3349 0%, #f45c43 100%)';
+                editBtnText.textContent = 'צא ממצב עריכה';
+                saveBtn.style.display = 'flex';
+                cancelBtn.style.display = 'flex';
+                indicator.style.display = 'block';
+                showToast('מצב עריכה פעיל', 'info');
+            } else {
+                editableElements.forEach(element => {
+                    element.setAttribute('contenteditable', 'false');
+                });
+                editBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                editBtnText.textContent = 'מצב עריכה';
+                saveBtn.style.display = 'none';
+                cancelBtn.style.display = 'none';
+                indicator.style.display = 'none';
+            }
+        }
+
+        function saveChanges() {
+            if (!isEditMode) return;
+            originalContent = document.querySelector('.container').innerHTML;
+            showToast('השינויים נשמרו בהצלחה! ✓', 'success');
+            toggleEditMode();
+        }
+
+        function cancelChanges() {
+            if (!isEditMode) return;
+            if (confirm('האם אתה בטוח שברצונך לבטל את כל השינויים?')) {
+                document.querySelector('.container').innerHTML = originalContent;
+                showToast('השינויים בוטלו', 'info');
+                isEditMode = false;
+                const editBtn = document.querySelector('.btn-edit');
+                const saveBtn = document.querySelector('.btn-save');
+                const cancelBtn = document.querySelector('.btn-cancel');
+                const indicator = document.getElementById('editIndicator');
+                const editBtnText = document.getElementById('editBtnText');
+                editBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                editBtnText.textContent = 'מצב עריכה';
+                saveBtn.style.display = 'none';
+                cancelBtn.style.display = 'none';
+                indicator.style.display = 'none';
+            }
+        }
+
+        function printReport() {
+            if (isEditMode) {
+                const editableElements = document.querySelectorAll('.editable');
+                editableElements.forEach(element => {
+                    element.setAttribute('contenteditable', 'false');
+                });
+            }
+            window.print();
+            if (isEditMode) {
+                const editableElements = document.querySelectorAll('.editable');
+                editableElements.forEach(element => {
+                    element.setAttribute('contenteditable', 'true');
+                });
+            }
+        }
+
+        function exportToHTML() {
+            const content = document.documentElement.outerHTML;
+            const blob = new Blob([content], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'דוח_ניהול_סיכונים_' + new Date().toISOString().split('T')[0] + '.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('הקובץ יורד למחשב שלך ✓', 'success');
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type}`;
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+
+        document.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
+                e.preventDefault();
+                toggleEditMode();
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                e.preventDefault();
+                if (isEditMode) saveChanges();
+            }
+            if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+                e.preventDefault();
+                printReport();
+            }
+            if (e.key === 'Escape' && isEditMode) {
+                cancelChanges();
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            originalContent = document.querySelector('.container').innerHTML;
+        });
+    </script>
+</body>
+</html>
